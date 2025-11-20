@@ -10,6 +10,10 @@
 #define MAX_ARGS 64
 #define MAX_JOBS 4
 
+// flags for clarity
+int is_background = 0;
+int active_jobs = 0;
+
 // Data structure to track background jobs
 typedef struct {
     pid_t pid;
@@ -17,7 +21,6 @@ typedef struct {
 } Job;
 
 Job background_jobs[MAX_JOBS];
-int active_jobs = 0;
 
 // Helper to initialize jobs array
 void init_jobs() {
@@ -117,7 +120,6 @@ int main() {
         if (args[0] == NULL) continue; // Should be covered by empty check, but safety first
 
         // 5. Check for Background '&'
-        int is_background = 0;
         if (i > 0 && strcmp(args[i-1], "&") == 0) {
             is_background = 1;
             args[i-1] = NULL; // Remove '&' from arguments passed to exec
