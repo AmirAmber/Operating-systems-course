@@ -141,13 +141,19 @@ int main() {
         } 
         
         // 3. cd
-        else if (strcmp(args[0], "cd") == 0) {
-            // "other variants should display hw1shell: invalid command"
-            // If no arg provided, or chdir fails
-            if (args[1] == NULL || chdir(args[1]) != 0) {
-                printf("hw1shell: invalid command\n");
+        else if (strcmp(args[0], "cd") == 0){
+            if(args[1] == NULL|| args[2] != NULL){ 
+                // No directory provided
+                printf("hw1shell: cd: missing argument\n");
+            } else {
+                if (chdir(args[1]) != 0) {
+                    // 14. chdir failed
+                    print_syscall_error("chdir");
+                    printf("hw1shell: invalid command/n");
+
+                }
             }
-        } 
+        }
         
         // 4. jobs
         else if (strcmp(args[0], "jobs") == 0) {
