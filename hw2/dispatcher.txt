@@ -1,0 +1,8 @@
+TIME 23: read cmd line: worker increment 0; increment 0; increment 0
+TIME 25: read cmd line: worker repeat 5; increment 1
+TIME 27: read cmd line: worker msleep 50; decrement 0
+TIME 28: read cmd line: dispatcher_msleep 100
+TIME 136: read cmd line: worker repeat 10; increment 2; decrement 2
+TIME 137: read cmd line: worker increment 5
+TIME 138: read cmd line: dispatcher_wait
+TIME 156: read cmd line: worker increment 9; repeat 5; increment 9

@@ -6,7 +6,7 @@ CFLAGS = -pthread -Wall -g
 TARGET = hw2
 
 # Your source file
-SRC = hw2amir.c
+SRC = hw2_207477753_208076919.c
 
 all: $(TARGET)
 
