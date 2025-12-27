@@ -16,7 +16,7 @@ void error(const char *msg) {
 }
 
 int main(int argc, char *argv[]) {
-    // Check syntax: hw3client addr port name
+    // Check syntax hw3client addr port name
     if (argc < 4) {
         fprintf(stderr, "Usage: %s <host> <port> <name>\n", argv[0]);
         exit(1);
@@ -30,40 +30,39 @@ int main(int argc, char *argv[]) {
     struct sockaddr_in server_addr;
     struct hostent *server;
 
-    //Create Socket
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);// TCP socket
+    // Create Socket
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) error("ERROR opening socket");
 
-    // Resolve Hostname  "localhost" to 127.0.0.1
+    // Resolve Hostname
     server = gethostbyname(hostname);
     if (server == NULL) {
         fprintf(stderr, "ERROR, no such host\n");
         exit(0);
     }
 
+    // Setup connection structure
     memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
     bcopy((char *)server->h_addr, (char *)&server_addr.sin_addr.s_addr, server->h_length);
     server_addr.sin_port = htons(port);
 
-    //Connect to Server
+    // Connect to Server
     if (connect(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) 
         error("ERROR connecting");
 
     // Handshake: Notify server of our name
-    //  send the name immediately after connecting.
     write(sockfd, name, strlen(name));
 
-    // Main Select Loop
+    // Main Loop: Monitor Stdin (User) and Socket (Server)
     fd_set readfds;
     printf("Connected to server as '%s'. You can start typing.\n", name);
 
     while(1) {
         FD_ZERO(&readfds);
-        FD_SET(STDIN_FILENO, &readfds); // Watch user input (fd 0)
+        FD_SET(STDIN_FILENO, &readfds); // Watch user input
         FD_SET(sockfd, &readfds);       // Watch server socket
 
-        // Monitor for activity
         if (select(sockfd + 1, &readfds, NULL, NULL, NULL) < 0)
             error("ERROR in select");
 
@@ -78,9 +77,7 @@ int main(int argc, char *argv[]) {
                 close(sockfd);
                 exit(0);
             }
-            // Display message as is
             printf("%s", buffer);
-            // Flush stdout to ensure the user sees it immediately
             fflush(stdout); 
         }
 
@@ -89,23 +86,19 @@ int main(int argc, char *argv[]) {
             char buffer[BUFFER_SIZE];
             memset(buffer, 0, BUFFER_SIZE);
             
-            // Read line from stdin
             if (fgets(buffer, BUFFER_SIZE, stdin) != NULL) {
-                
-                // Handle !exit command
+                // Check for exit command
                 if (strncmp(buffer, "!exit", 5) == 0) {
-                    // Send to server first (so others know we left)
-                    write(sockfd, buffer, strlen(buffer));
+                    write(sockfd, buffer, strlen(buffer)); // Notify server
                     printf("client exiting\n");
                     close(sockfd);
                     exit(0);
                 }
 
-                // Send normal/whisper message to server
+                // Send message to server
                 write(sockfd, buffer, strlen(buffer));
             }
         }
     }
-
     return 0;
 }
