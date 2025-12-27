@@ -10,7 +10,6 @@
 
 #define MAX_CLIENTS 100
 #define BUFFER_SIZE 1024
-// FD_SETSIZE is usually 1024, plenty for our array mapping
 #define MAX_FD 1024 
 
 void error(const char *msg) {
@@ -19,7 +18,6 @@ void error(const char *msg) {
 }
 
 // Global array to map Socket File Descriptors to Client Names
-// Index = Socket FD, Value = Name String
 char *client_names[MAX_FD];
 
 int main(int argc, char *argv[]) {
@@ -33,7 +31,7 @@ int main(int argc, char *argv[]) {
     struct sockaddr_in server_addr, client_addr;
     socklen_t client_len;
     
-    // Initialize names array to NULL
+    // Initialize names array
     for (int i = 0; i < MAX_FD; i++) client_names[i] = NULL;
 
     server_sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -77,28 +75,22 @@ int main(int argc, char *argv[]) {
                     if (new_sock < 0) {
                         perror("Accept error");
                     } else if (new_sock >= MAX_FD) {
-                        fprintf(stderr, "Too many clients. Connection rejected.\n");
                         close(new_sock);
                     } else {
                         FD_SET(new_sock, &readfds);
                         if (new_sock > max_fd) max_fd = new_sock;
 
-                        // HANDSHAKE: Read the name immediately
+                        // Handshake: Read Name
                         char name_buf[BUFFER_SIZE];
                         memset(name_buf, 0, BUFFER_SIZE);
-                        // We assume the client sends the name immediately upon connect
                         int len = read(new_sock, name_buf, BUFFER_SIZE - 1);
                         
                         if (len > 0) {
-                            // Strip newline if present (though client usually sends pure string)
-                            name_buf[strcspn(name_buf, "\n")] = 0;
+                            name_buf[strcspn(name_buf, "\r\n")] = 0; // Strip newlines
                             client_names[new_sock] = strdup(name_buf);
-                            
-                            // REQUIRED OUTPUT: client <name> connected from <address>
                             printf("client %s connected from %s\n", 
                                    client_names[new_sock], inet_ntoa(client_addr.sin_addr));
                         } else {
-                            // If read fails immediately, close
                             close(new_sock);
                             FD_CLR(new_sock, &readfds);
                         }
@@ -110,9 +102,8 @@ int main(int argc, char *argv[]) {
                     memset(buffer, 0, BUFFER_SIZE);
                     int n = read(i, buffer, BUFFER_SIZE - 1);
                     
-                    // Client Disconnected
                     if (n <= 0) {
-                        // REQUIRED OUTPUT: client <name> disconnected
+                        // Disconnect
                         if (client_names[i] != NULL) {
                             printf("client %s disconnected\n", client_names[i]);
                             free(client_names[i]);
@@ -121,20 +112,48 @@ int main(int argc, char *argv[]) {
                         close(i);
                         FD_CLR(i, &readfds);
                     } 
-                    // Normal Message handling
                     else {
-                        // Construct message: "name: original_msg"
+                        // Prepare the message prefix: "SenderName: "
                         char formatted_msg[BUFFER_SIZE + 50];
                         memset(formatted_msg, 0, sizeof(formatted_msg));
-                        
-                        // Note: buffer might already contain newline from fgets in client
                         sprintf(formatted_msg, "%s: %s", client_names[i], buffer);
+
+                        // --- LOGIC SPLIT: WHISPER VS NORMAL ---
                         
-                        // BROADCAST to ALL clients (including sender)
-                        for (int j = 0; j <= max_fd; j++) {
-                            // Send to everyone who is in the set AND is not the listener socket
-                            if (FD_ISSET(j, &readfds) && j != server_sock) {
-                                write(j, formatted_msg, strlen(formatted_msg));
+                        // Check for Whisper: Starts with '@' and contains a space
+                        char *space_ptr = strchr(buffer, ' ');
+                        
+                        if (buffer[0] == '@' && space_ptr != NULL) {
+                            // 1. Extract the target name
+                            // The name is between buffer[1] and space_ptr
+                            int name_len = space_ptr - (buffer + 1);
+                            char target_name[100];
+                            memset(target_name, 0, sizeof(target_name));
+                            strncpy(target_name, buffer + 1, name_len);
+
+                            // 2. Find the target client
+                            int target_found = 0;
+                            for (int j = 0; j <= max_fd; j++) {
+                                if (client_names[j] != NULL && strcmp(client_names[j], target_name) == 0) {
+                                    // 3. Send ONLY to target
+                                    // Spec: "sent just to the destination client"
+                                    write(j, formatted_msg, strlen(formatted_msg));
+                                    target_found = 1;
+                                    break; 
+                                }
+                            }
+                            // Optional: If target not found, we do nothing (or could print error to server log)
+                            if (!target_found) {
+                                printf("Debug: Whisper target '%s' not found.\n", target_name);
+                            }
+                        } 
+                        else {
+                            // --- NORMAL MESSAGE (Broadcast) ---
+                            // Spec: "sent to all connected clients (including back to the client)"
+                            for (int j = 0; j <= max_fd; j++) {
+                                if (FD_ISSET(j, &readfds) && j != server_sock) {
+                                    write(j, formatted_msg, strlen(formatted_msg));
+                                }
                             }
                         }
                     }
