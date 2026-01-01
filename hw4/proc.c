@@ -76,7 +76,7 @@ allocproc(void)
 {
   struct proc *p;
   char *sp;
-  p->nrswitch =0;
+  
 
   acquire(&ptable.lock);
 
@@ -90,6 +90,7 @@ allocproc(void)
 found:
   p->state = EMBRYO;
   p->pid = nextpid++;
+  p->nrswitch =0;
 
   release(&ptable.lock);
 
@@ -540,7 +541,7 @@ int getNumProc(void){
 	int count =0;
 
 	acquire(&ptable.lock);
-	for(p=ptable.proc; p<ptable.proc[NPROC]; p++){
+	for(p=ptable.proc; p<&ptable.proc[NPROC]; p++){
 		if(p->state != UNUSED)
 			count++;
 	}
@@ -552,8 +553,8 @@ int getMaxPid(void){
 	struct proc* p;
 	int max_pid =-1; //if return -1 no process was found 
 	
-	acquire&(ptable.lock);
-	for(p = ptable.proc; p = ptable.proc[NPROC];p++){
+	acquire(&ptable.lock);
+	for(p = ptable.proc; p < &ptable.proc[NPROC];p++){
 		if(p->state != UNUSED){
 			if(p->pid > max_pid)
 				max_pid = p->pid;
@@ -566,9 +567,11 @@ int getMaxPid(void){
 int getProcInfo(int pid, struct processInfo* pinfo){
 	struct proc* p;
 	struct process* parent;
+	int i;
+	int open_files;
 
 	acquire(&ptable.lock);
-	for(p = ptable.proc; p< ptable.proc[NPROC]; p++){
+	for(p = ptable.proc; p< &ptable.proc[NPROC]; p++){
 		if(p->pid == pid && p->state !=UNUSED){
 			//found the process and the process is alive, handling data;
 			pinfo->state = p-> state;
@@ -576,7 +579,7 @@ int getProcInfo(int pid, struct processInfo* pinfo){
 			pinfo ->nrswitch = p-> nrswitch;
 			
 			//calculate NFD
-			int open_files = 0;
+			open_files = 0;
 			for(int i=0; i < NOFILE; i++){
 				if(p->ofile[i]) 
 					open_files++;
