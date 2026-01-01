@@ -16,6 +16,7 @@ void error(const char *msg) {
 }
 
 int main(int argc, char *argv[]) {
+    setbuf(stdout, NULL); // Disable output buffering
     // Check syntax hw3client addr port name
     if (argc < 4) {
         fprintf(stderr, "Usage: %s <host> <port> <name>\n", argv[0]);
