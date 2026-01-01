@@ -566,8 +566,6 @@ int getMaxPid(void){
 
 int getProcInfo(int pid, struct processInfo* pinfo){
 	struct proc* p;
-	struct process* parent;
-	int i;
 	int open_files;
 
 	acquire(&ptable.lock);
