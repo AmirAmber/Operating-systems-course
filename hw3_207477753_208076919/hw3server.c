@@ -23,6 +23,7 @@ void error(const char *msg) {
 char *client_names[MAX_FD];
 
 int main(int argc, char *argv[]) {
+    setbuf(stdout, NULL); // Disable output buffering
     // Check command line arguments: hw3server port
     if (argc < 2) {
         fprintf(stderr, "Usage: %s <port>\n", argv[0]);
