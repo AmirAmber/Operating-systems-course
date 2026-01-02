@@ -342,10 +342,11 @@ scheduler(void)
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
       // before jumping back to us.
-      p->nrswitch++; //increment nrswitch when scheduler have done context switch to this process
+      //increment nrswitch when scheduler have done context switch to this process
       c->proc = p;
       switchuvm(p);
       p->state = RUNNING;
+      p->nrswitch++;
 
       swtch(&(c->scheduler), p->context);
       switchkvm();
@@ -566,7 +567,7 @@ int getMaxPid(void){
 
 int getProcInfo(int pid, struct processInfo* pinfo){
 	struct proc* p;
-	int open_files;
+	int open_files, i;
 
 	acquire(&ptable.lock);
 	for(p = ptable.proc; p< &ptable.proc[NPROC]; p++){
@@ -578,7 +579,7 @@ int getProcInfo(int pid, struct processInfo* pinfo){
 			
 			//calculate NFD
 			open_files = 0;
-			for(int i=0; i < NOFILE; i++){
+			for(i=0; i < NOFILE; i++){
 				if(p->ofile[i]) 
 					open_files++;
 			}
