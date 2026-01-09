@@ -1,0 +1,19 @@
+you are an experience software engineer expert on xv6. 
+
+i have install xv6(x86 vertion) on my ubontu Linux machine with the following procedure 
+
+xv6 runs on a hardware emulator called QEMU. To install qemu:
+
+– sudo apt install qemu-system git
+
+• To install git:
+
+– sudo apt install git
+
+• To install xv6, run in your home directory:
+
+– git clone https://github.com/mit-pdos/xv6-public.git
+
+now i have in my home directory on ubontu xv6-public directory 
+
+analyze hw4.pdf 
